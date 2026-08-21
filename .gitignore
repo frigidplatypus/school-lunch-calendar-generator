@@ -1,0 +1,17 @@
+# Build artifacts
+calendar-app
+hash-password
+result
+
+# Runtime data (db, wal/shm files, uploaded logos)
+data/
+
+# Local config with secrets
+config.yaml
+
+# Nix
+result
+
+# Editor/OS
+*.swp
+.DS_Store

@@ -1,0 +1,173 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>School Lunch Menu Calendar</title>
+<link rel="stylesheet" href="/fonts/fonts.css">
+<link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+
+<h1>School Lunch Menu Calendar</h1>
+
+<div class="controls-card">
+  <div class="controls-section">
+    <div class="controls-title">Content</div>
+    <div class="controls-row">
+      <label for="school-input">School:</label>
+      <input type="text" id="school-input" placeholder="School or campus name">
+      <label for="footer-message-input">Footer:</label>
+      <input type="text" id="footer-message-input" placeholder="e.g. Menus subject to change">
+      <label for="logo-input">Logo:</label>
+      <input type="file" id="logo-input" accept="image/*">
+      <div class="month-nav">
+        <button type="button" id="prev-month-btn" class="btn-nav" title="Previous month">&lsaquo;</button>
+        <select id="month-select"></select>
+        <select id="year-select"></select>
+        <button type="button" id="next-month-btn" class="btn-nav" title="Next month">&rsaquo;</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="controls-section">
+    <div class="controls-title">Style</div>
+    <div class="controls-row">
+      <label for="color-picker">Theme:</label>
+      <input type="color" id="color-picker" value="#2980b9">
+      <div class="preset-colors">
+        <div class="preset-color" style="background:#2980b9;" data-color="#2980b9" title="Blue"></div>
+        <div class="preset-color" style="background:#27ae60;" data-color="#27ae60" title="Green"></div>
+        <div class="preset-color" style="background:#e67e22;" data-color="#e67e22" title="Orange"></div>
+        <div class="preset-color" style="background:#8e44ad;" data-color="#8e44ad" title="Purple"></div>
+        <div class="preset-color" style="background:#c0392b;" data-color="#c0392b" title="Red"></div>
+        <div class="preset-color" style="background:#2c3e50;" data-color="#2c3e50" title="Dark"></div>
+      </div>
+      <label for="font-select">Font:</label>
+      <select id="font-select">
+        <option value="'Open Sans', sans-serif">Open Sans</option>
+        <option value="'Montserrat', sans-serif">Montserrat</option>
+        <option value="'Lato', sans-serif">Lato</option>
+        <option value="'Merriweather', serif">Merriweather</option>
+        <option value="'Playfair Display', serif">Playfair Display</option>
+        <option value="'Roboto Slab', serif">Roboto Slab</option>
+        <option value="'Nunito', sans-serif">Nunito</option>
+        <option value="'Quicksand', sans-serif">Quicksand</option>
+        <option value="Georgia, serif">Georgia</option>
+        <option value="Arial, sans-serif">Arial</option>
+      </select>
+      <label for="bg-style">Background:</label>
+      <select id="bg-style">
+        <option value="solid">Solid</option>
+        <option value="gradient-diagonal" selected>Gradient Diagonal</option>
+        <option value="gradient-vertical">Gradient Vertical</option>
+        <option value="gradient-radial">Gradient Radial</option>
+        <option value="pattern-dots">Pattern Dots</option>
+        <option value="pattern-lines">Pattern Lines</option>
+        <option value="pattern-grid">Pattern Grid</option>
+      </select>
+      <label for="border-style">Border:</label>
+      <select id="border-style">
+        <option value="solid" selected>Solid</option>
+        <option value="rounded">Rounded</option>
+        <option value="dashed">Dashed</option>
+        <option value="double">Double</option>
+        <option value="shadow">Shadow</option>
+      </select>
+    </div>
+  </div>
+
+  <div class="controls-section controls-actions">
+    <div class="controls-title">Actions</div>
+    <div class="controls-row">
+      <button class="btn btn-generate" id="generate-btn">Generate Calendar</button>
+    </div>
+  </div>
+</div>
+
+<div class="toolbar-row">
+  <button class="btn btn-secondary" id="manage-holidays-btn">Manage Holidays</button>
+  <button class="btn btn-secondary" id="manage-menus-btn">Manage Menu Items</button>
+  <button class="btn btn-secondary" id="change-pw-btn">Change Password</button>
+  <button class="btn btn-secondary" id="logout-btn">Logout</button>
+  <div id="import-section">
+    <button class="btn btn-secondary btn-sm" id="export-btn">Export All</button>
+    <label for="import-file" class="btn btn-secondary btn-sm" style="cursor:pointer;">Import All</label>
+    <input type="file" id="import-file" accept=".json" style="display:none;">
+  </div>
+</div>
+
+<div id="input-grid"></div>
+
+<div id="calendar-output"></div>
+
+<div id="download-section">
+  <button class="btn btn-download" id="download-btn">Download PDF</button>
+</div>
+
+<div id="holidays-modal" class="modal">
+  <div class="modal-content">
+    <div class="modal-header">
+      <h2>Manage Holidays</h2>
+      <button class="modal-close" data-modal="holidays-modal">&times;</button>
+    </div>
+    <div class="form-group">
+      <label>Add New Holiday</label>
+      <div style="display:flex;gap:8px;">
+        <select id="holiday-month" style="flex:1;"></select>
+        <input type="number" id="holiday-date" placeholder="Date" min="1" max="31" style="flex:0.5;">
+        <input type="text" id="holiday-name" placeholder="Holiday name" style="flex:1.5;">
+        <button class="btn btn-generate" id="add-holiday-btn">Add</button>
+      </div>
+    </div>
+    <div id="holidays-list"></div>
+  </div>
+</div>
+
+<div id="menus-modal" class="modal">
+  <div class="modal-content">
+    <div class="modal-header">
+      <h2>Manage Menu Items</h2>
+      <button class="modal-close" data-modal="menus-modal">&times;</button>
+    </div>
+    <div class="form-group">
+      <label>Add Breakfast Item</label>
+      <div style="display:flex;gap:8px;">
+        <input type="text" id="breakfast-item-input" placeholder="Breakfast item">
+        <button class="btn btn-generate" id="add-breakfast-btn">Add</button>
+      </div>
+    </div>
+    <div class="form-group">
+      <label>Add Lunch Item</label>
+      <div style="display:flex;gap:8px;">
+        <input type="text" id="lunch-item-input" placeholder="Lunch item">
+        <button class="btn btn-generate" id="add-lunch-btn">Add</button>
+      </div>
+    </div>
+    <div id="menus-list"></div>
+  </div>
+</div>
+
+<div id="password-modal" class="modal">
+  <div class="modal-content" style="max-width:400px;">
+    <div class="modal-header">
+      <h2>Change Password</h2>
+      <button class="modal-close" data-modal="password-modal">&times;</button>
+    </div>
+    <div class="form-group">
+      <label>New Password</label>
+      <input type="password" id="new-password" placeholder="Min 4 characters">
+    </div>
+    <div class="form-group">
+      <label>Confirm Password</label>
+      <input type="password" id="confirm-password" placeholder="Repeat password">
+    </div>
+    <div id="pw-error" style="color:#e74c3c;font-size:0.85rem;margin-bottom:12px;display:none;"></div>
+    <button class="btn btn-generate" id="change-pw-submit" style="width:100%;">Update Password</button>
+  </div>
+</div>
+
+<script src="/js/app.js"></script>
+
+</body>
+</html>
