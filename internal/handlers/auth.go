@@ -73,6 +73,12 @@ func (h *AuthHandler) ChangePassword(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	if h.cfg.PasswordExternal() {
+		w.WriteHeader(http.StatusForbidden)
+		json.NewEncoder(w).Encode(models.ErrorResponse{Error: "password is managed externally and cannot be changed via the UI"})
+		return
+	}
+
 	var req models.PasswordChangeRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		w.WriteHeader(http.StatusBadRequest)
