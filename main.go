@@ -68,6 +68,16 @@ func main() {
 	r.Post("/login", authHandler.Login)
 	r.Post("/logout", authHandler.Logout)
 
+	r.Get("/healthz", func(w http.ResponseWriter, r *http.Request) {
+		if err := db.Ping(); err != nil {
+			w.WriteHeader(http.StatusServiceUnavailable)
+			fmt.Fprintf(w, `{"status":"unhealthy","error":"%s"}`, err.Error())
+			return
+		}
+		w.Header().Set("Content-Type", "application/json")
+		fmt.Fprint(w, `{"status":"ok"}`)
+	})
+
 	r.Get("/api/logo", logoHandler.GetLogo)
 
 	r.Group(func(r chi.Router) {

@@ -1,4 +1,6 @@
 password_hash: "$2a$10$example_hash_replace_me"
+# password_file: "/run/secrets/school-lunch-password"
 port: 8080
 data_dir: "./data"
 session_secret: "change-this-to-a-random-secret-string"
+# session_secret_file: "/run/secrets/school-lunch-session"

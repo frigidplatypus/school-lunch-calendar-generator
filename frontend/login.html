@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Login - School Lunch Menu Calendar</title>
-<link href="https://fonts.googleapis.com/css2?family=Open+Sans:wght@400;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/fonts/fonts.css">
 <style>
 * { margin: 0; padding: 0; box-sizing: border-box; }
 
@@ -83,18 +83,6 @@ body {
   margin-bottom: 12px;
   display: none;
 }
-
-.warning-banner {
-  background: #fef3cd;
-  color: #856404;
-  border: 1px solid #ffc107;
-  border-radius: 6px;
-  padding: 10px 14px;
-  font-size: 0.82rem;
-  margin-bottom: 16px;
-  text-align: left;
-  display: none;
-}
 </style>
 </head>
 <body>
@@ -102,9 +90,6 @@ body {
 <div class="login-card">
   <h1>School Lunch Menu Calendar</h1>
   <p>Enter password to continue</p>
-  <div class="warning-banner" id="warning-banner">
-    The password is still set to the default example value. Please change it after logging in.
-  </div>
   <div class="error-msg" id="error-msg">Invalid password. Please try again.</div>
   <form id="login-form">
     <input type="password" id="password-input" placeholder="Password" autofocus>
