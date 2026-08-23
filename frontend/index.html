@@ -6,6 +6,8 @@
 <title>School Lunch Menu Calendar</title>
 <link rel="stylesheet" href="/fonts/fonts.css">
 <link rel="stylesheet" href="/css/style.css">
+<script src="/js/presets.js" defer></script>
+<script src="/js/app.js" defer></script>
 </head>
 <body>
 
@@ -33,6 +35,8 @@
   <div class="controls-section">
     <div class="controls-title">Style</div>
     <div class="controls-row">
+      <label for="preset-select">Design:</label>
+      <select id="preset-select"></select>
       <label for="color-picker">Theme:</label>
       <input type="color" id="color-picker" value="#2980b9">
       <div class="preset-colors">
@@ -75,6 +79,7 @@
         <option value="shadow">Shadow</option>
       </select>
     </div>
+    <div class="preset-cards" id="preset-cards"></div>
   </div>
 
   <div class="controls-section controls-actions">

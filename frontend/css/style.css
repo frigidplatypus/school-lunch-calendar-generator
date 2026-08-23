@@ -510,4 +510,67 @@ h1 {
   background: #c0392b;
 }
 
+.preset-cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+  gap: 8px;
+  margin-top: 12px;
+}
+
+.preset-card {
+  border: 2px solid #e0e0e0;
+  border-radius: 8px;
+  padding: 10px;
+  cursor: pointer;
+  transition: border-color 0.15s, box-shadow 0.15s;
+  text-align: center;
+  background: #fff;
+}
+
+.preset-card:hover {
+  border-color: #aaa;
+}
+
+.preset-card.active {
+  border-color: #2980b9;
+  box-shadow: 0 0 0 2px rgba(41,128,185,0.25);
+}
+
+.preset-card-name {
+  font-size: 0.78rem;
+  font-weight: 700;
+  margin-bottom: 4px;
+  color: #333;
+}
+
+.preset-card-desc {
+  font-size: 0.68rem;
+  color: #888;
+  margin-bottom: 6px;
+}
+
+.preset-card-swatches {
+  display: flex;
+  justify-content: center;
+  gap: 3px;
+}
+
+.preset-card-swatch {
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  border: 1px solid rgba(0,0,0,0.1);
+}
+
+.preset-decoration {
+  display: inline-block;
+  vertical-align: middle;
+  line-height: 0;
+}
+
+.preset-decoration svg {
+  display: inline-block;
+  vertical-align: middle;
+}
+
 

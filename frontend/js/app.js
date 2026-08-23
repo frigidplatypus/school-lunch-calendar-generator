@@ -8,6 +8,7 @@ const footerMessageInput = document.getElementById('footer-message-input');
 const logoInput = document.getElementById('logo-input');
 const monthSelect = document.getElementById('month-select');
 const yearSelect = document.getElementById('year-select');
+const presetSelect = document.getElementById('preset-select');
 const colorPicker = document.getElementById('color-picker');
 const fontSelect = document.getElementById('font-select');
 const bgStyle = document.getElementById('bg-style');
@@ -38,6 +39,53 @@ footerMessageInput.addEventListener('input', function() {
 function applyThemeToHeading(color) {
   const h1 = document.querySelector('h1');
   if (h1) h1.style.color = color;
+}
+
+function initPresets() {
+  var cards = document.getElementById('preset-cards');
+  if (!cards) return;
+  Object.keys(DESIGN_PRESETS).forEach(function(id) {
+    var p = DESIGN_PRESETS[id];
+    var opt = document.createElement('option');
+    opt.value = id;
+    opt.textContent = p.name;
+    presetSelect.appendChild(opt);
+
+    var card = document.createElement('div');
+    card.className = 'preset-card';
+    card.dataset.preset = id;
+    card.innerHTML =
+      '<div class="preset-card-name">' + p.name + '</div>' +
+      '<div class="preset-card-desc">' + p.description + '</div>' +
+      '<div class="preset-card-swatches">' +
+        '<div class="preset-card-swatch" style="background:' + p.palette.primary + ';"></div>' +
+        '<div class="preset-card-swatch" style="background:' + p.palette.secondary + ';"></div>' +
+        '<div class="preset-card-swatch" style="background:' + p.palette.accent + ';"></div>' +
+      '</div>';
+    card.addEventListener('click', function() {
+      presetSelect.value = id;
+      applyPreset(id);
+    });
+    cards.appendChild(card);
+  });
+  presetSelect.value = 'classic-school';
+  presetSelect.addEventListener('change', function() {
+    applyPreset(presetSelect.value);
+  });
+}
+
+function applyPreset(id) {
+  var p = getPreset(id);
+  colorPicker.value = p.palette.primary;
+  applyThemeToHeading(p.palette.primary);
+  document.querySelectorAll('.preset-card').forEach(function(c) {
+    c.classList.toggle('active', c.dataset.preset === id);
+  });
+  scheduleStylePreview();
+}
+
+function getActivePreset() {
+  return getPreset(presetSelect.value);
 }
 
 function showToast(message, type) {
@@ -607,6 +655,7 @@ function buildCalendarHTML() {
   const month = parseInt(monthSelect.value);
   const school = schoolInput.value.trim();
   const footerMessage = footerMessageInput.value.trim();
+  const preset = getActivePreset();
   const themeColor = colorPicker.value;
   const font = fontSelect.value;
   const bgStyleValue = bgStyle.value;
@@ -621,13 +670,20 @@ function buildCalendarHTML() {
   let html = '<div id="pdf-page" style="width:1056px;padding:16px;font-family:' + font + ';background:#fff;color:#222;display:flex;flex-direction:column;">';
 
   html += '<div class="cal-header" style="display:flex;align-items:center;justify-content:center;gap:14px;margin-bottom:10px;flex-shrink:0;">';
+  if (preset.headerSvg) {
+    html += presetSvgHtml(preset.headerSvg, themeColor);
+  }
   if (logoDataUrl) {
     html += '<img src="' + logoDataUrl + '" style="max-height:48px;max-width:96px;object-fit:contain;flex-shrink:0;">';
   }
   html += '<div style="text-align:center;">';
   if (school) html += '<div style="font-size:13pt;font-weight:700;color:' + themeColor + ';line-height:1.2;">' + escapeHtml(school) + '</div>';
   html += '<div style="font-size:20pt;font-weight:700;color:' + themeColor + ';line-height:1.2;">' + MONTHS[month] + ' ' + year + '</div>';
-  html += '</div></div>';
+  html += '</div>';
+  if (preset.headerSvg) {
+    html += presetSvgHtml(preset.headerSvg, themeColor);
+  }
+  html += '</div>';
 
   html += '<div class="cal-grid" style="display:grid;grid-template-columns:repeat(7,1fr);gap:4px;flex:1;">';
 
@@ -642,26 +698,26 @@ function buildCalendarHTML() {
       const isWeekend = di === 0 || di === 6;
 
       if (dayInfo === null || !dayInfo.inMonth) {
-        let s = 'border:1px solid #e0e0e0;border-radius:4px;padding:4px;opacity:0.3;background:#f9f9f9;';
+        let s = 'border:1px solid #e0e0e0;border-radius:' + preset.cellBorderRadius + ';padding:4px;opacity:0.3;background:#f9f9f9;';
         html += '<div class="cal-cell" style="' + s + '"></div>';
       } else if (isWeekend) {
-        let s = 'border:1px solid ' + borderColor + ';border-radius:4px;padding:4px;background:#f5f5f5;';
+        let s = 'border:1px solid ' + borderColor + ';border-radius:' + preset.cellBorderRadius + ';padding:4px;background:#f5f5f5;';
         html += '<div class="cal-cell" style="' + s + '"><div style="font-weight:600;font-size:11px;color:#888;">' + dayInfo.date + '</div></div>';
       } else {
         const key = dayInfo.date + '-' + di;
         const entry = menuMap[key] || { type: 'menu', breakfast: '', lunch: '', message: '' };
         let s;
         if (entry.type === 'message') {
-          s = 'border:1px solid ' + themeColor + ';border-radius:4px;padding:5px;background:#fef9e7;';
+          s = 'border:1px solid ' + themeColor + ';border-radius:' + preset.cellBorderRadius + ';padding:5px;background:#fef9e7;';
         } else {
-          s = 'border:1px solid ' + borderColor + ';border-radius:4px;padding:5px;' + getBackgroundStyle(bgStyleValue, themeColor, lightColor);
+          s = 'border:1px solid ' + borderColor + ';border-radius:' + preset.cellBorderRadius + ';padding:5px;' + getBackgroundStyle(bgStyleValue, themeColor, lightColor);
         }
         let content = '<div style="font-weight:700;font-size:12px;color:' + themeColor + ';margin-bottom:2px;">' + DAYS_SHORT[di] + ' ' + dayInfo.date + '</div>';
         if (entry.type === 'message') {
           if (entry.message) content += '<div style="font-size:10px;line-height:1.3;text-align:center;font-weight:600;color:' + themeColor + ';">' + escapeHtml(entry.message).replace(/\n/g, '<br>') + '</div>';
         } else {
-          if (entry.breakfast) content += '<div style="font-size:10px;line-height:1.3;margin-bottom:2px;">' + mealBadge('B', themeColor) + escapeHtml(entry.breakfast).replace(/\n/g, '<br>') + '</div>';
-          if (entry.lunch) content += '<div style="font-size:10px;line-height:1.3;">' + mealBadge('L', themeColor) + escapeHtml(entry.lunch).replace(/\n/g, '<br>') + '</div>';
+          if (entry.breakfast) content += '<div style="font-size:10px;line-height:1.3;margin-bottom:2px;">' + presetBadgeStyle(preset, themeColor) + escapeHtml(entry.breakfast).replace(/\n/g, '<br>') + '</div>';
+          if (entry.lunch) content += '<div style="font-size:10px;line-height:1.3;">' + presetBadgeStyle(preset, lightenColor(themeColor, 0.3)) + escapeHtml(entry.lunch).replace(/\n/g, '<br>') + '</div>';
         }
         html += '<div class="cal-cell" style="' + s + '">' + content + '</div>';
       }
@@ -670,8 +726,18 @@ function buildCalendarHTML() {
 
   html += '</div>';
 
-  if (footerMessage) {
-    html += '<div class="cal-footer" style="margin-top:8px;padding-top:6px;border-top:1px solid ' + borderColor + ';text-align:center;font-size:9pt;color:#666;flex-shrink:0;">' + escapeHtml(footerMessage) + '</div>';
+  if (footerMessage || preset.footerSvg) {
+    html += '<div class="cal-footer" style="margin-top:8px;padding-top:6px;border-top:1px solid ' + borderColor + ';text-align:center;font-size:9pt;color:#666;flex-shrink:0;display:flex;align-items:center;justify-content:center;gap:12px;">';
+    if (preset.footerSvg) {
+      html += presetSvgHtml(preset.footerSvg, themeColor);
+    }
+    if (footerMessage) {
+      html += '<span>' + escapeHtml(footerMessage) + '</span>';
+    }
+    if (preset.footerSvg) {
+      html += presetSvgHtml(preset.footerSvg, themeColor);
+    }
+    html += '</div>';
   }
 
   html += '</div>';
@@ -802,6 +868,7 @@ function scheduleStylePreview() {
     return;
   }
   initSelectors();
+  initPresets();
   await renderInputGrid();
 
   monthSelect.addEventListener('change', () => renderInputGrid().then(() => renderCalendar(true)));
