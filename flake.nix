@@ -28,7 +28,7 @@
           version = "1.0.0";
           inherit src;
 
-          vendorHash = "sha256-AFv5Hp+gmRuetMzRXm1m0AGLNduZtqU8lhiC07GQ9dA=";
+          vendorHash = "sha256-eMhl9Pc7Ip1X8Mltbe8BaPcpTcv3Ud9ccvsS6Tc1gLc=";
 
           nativeBuildInputs = with pkgs; [ gcc ];
 
