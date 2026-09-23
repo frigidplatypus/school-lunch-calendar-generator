@@ -498,7 +498,7 @@ async function renderInputGrid() {
         cell.style.opacity = '0.3';
         cell.innerHTML = '<div class="day-label">' + DAY_NAMES[di] + '</div><p style="font-size:0.8rem;color:#999;">\u2014</p>';
       } else {
-        const dayName = DAY_NAMES[di];
+        const dayName = DAYS_FULL[dayInfo.dayOfWeek];
         const dow = dayInfo.dayOfWeek;
         const holiday = isHoliday(dayInfo.date, month);
         const stored = storedMap[dayInfo.date + '-' + dow];
@@ -667,7 +667,7 @@ function buildCalendarHTML() {
   const menuMap = {};
   menus.forEach(m => { menuMap[m.date + '-' + m.day] = m; });
 
-  let html = '<div id="pdf-page" style="width:1056px;padding:16px;font-family:' + font + ';background:#fff;color:#222;display:flex;flex-direction:column;">';
+  let html = '<div id="pdf-page" style="width:1056px;max-width:100%;padding:16px;font-family:' + font + ';background:#fff;color:#222;display:flex;flex-direction:column;">';
 
   html += '<div class="cal-header" style="display:flex;align-items:center;justify-content:center;gap:14px;margin-bottom:10px;flex-shrink:0;">';
   if (preset.headerSvg) {
@@ -716,8 +716,8 @@ function buildCalendarHTML() {
         if (entry.type === 'message') {
           if (entry.message) content += '<div style="font-size:10px;line-height:1.3;text-align:center;font-weight:600;color:' + themeColor + ';">' + escapeHtml(entry.message).replace(/\n/g, '<br>') + '</div>';
         } else {
-          if (entry.breakfast) content += '<div style="font-size:10px;line-height:1.3;margin-bottom:2px;">' + presetBadgeStyle(preset, themeColor) + escapeHtml(entry.breakfast).replace(/\n/g, '<br>') + '</div>';
-          if (entry.lunch) content += '<div style="font-size:10px;line-height:1.3;">' + presetBadgeStyle(preset, lightenColor(themeColor, 0.3)) + escapeHtml(entry.lunch).replace(/\n/g, '<br>') + '</div>';
+          if (entry.breakfast) content += '<div style="font-size:10px;line-height:1.3;margin-bottom:2px;display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:2;overflow:hidden;overflow-wrap:anywhere;">' + presetBadgeStyle(preset, themeColor) + escapeHtml(entry.breakfast).replace(/\n/g, '<br>') + '</div>';
+          if (entry.lunch) content += '<div style="font-size:10px;line-height:1.3;display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:2;overflow:hidden;overflow-wrap:anywhere;">' + presetBadgeStyle(preset, lightenColor(themeColor, 0.3)) + escapeHtml(entry.lunch).replace(/\n/g, '<br>') + '</div>';
         }
         html += '<div class="cal-cell" style="' + s + '">' + content + '</div>';
       }
