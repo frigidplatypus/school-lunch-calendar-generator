@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"net/http"
 	"strconv"
+	"time"
 
 	"calendar-app/internal/database"
 	"calendar-app/internal/models"
@@ -238,4 +239,112 @@ func (h *APIHandler) ImportData(w http.ResponseWriter, r *http.Request) {
 
 	w.WriteHeader(http.StatusOK)
 	json.NewEncoder(w).Encode(map[string]string{"status": "ok"})
+}
+
+func (h *APIHandler) ImportHolidays(w http.ResponseWriter, r *http.Request) {
+	var body struct {
+		Holidays *[]models.Holiday `json:"holidays"`
+	}
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		w.WriteHeader(http.StatusBadRequest)
+		json.NewEncoder(w).Encode(models.ErrorResponse{Error: "invalid holidays JSON"})
+		return
+	}
+	if body.Holidays == nil {
+		w.WriteHeader(http.StatusBadRequest)
+		json.NewEncoder(w).Encode(models.ErrorResponse{Error: "holidays must be an array"})
+		return
+	}
+	for _, holiday := range *body.Holidays {
+		maxDate := time.Date(2000, time.Month(holiday.Month+2), 0, 0, 0, 0, 0, time.UTC).Day()
+		if holiday.Month < 0 || holiday.Month > 11 || holiday.Date < 1 || holiday.Date > maxDate || holiday.Name == "" {
+			w.WriteHeader(http.StatusBadRequest)
+			json.NewEncoder(w).Encode(models.ErrorResponse{Error: "each holiday needs a valid month, date, and name"})
+			return
+		}
+	}
+	if err := h.db.ImportHolidays(*body.Holidays); err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		json.NewEncoder(w).Encode(models.ErrorResponse{Error: err.Error()})
+		return
+	}
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(map[string]int{"imported": len(*body.Holidays)})
+}
+
+func (h *APIHandler) ImportMenuItems(w http.ResponseWriter, r *http.Request) {
+	var body struct {
+		Items *[]models.MenuItem `json:"items"`
+	}
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		w.WriteHeader(http.StatusBadRequest)
+		json.NewEncoder(w).Encode(models.ErrorResponse{Error: "invalid menu items JSON"})
+		return
+	}
+	if body.Items == nil {
+		w.WriteHeader(http.StatusBadRequest)
+		json.NewEncoder(w).Encode(models.ErrorResponse{Error: "items must be an array"})
+		return
+	}
+	for _, item := range *body.Items {
+		if (item.MealType != "breakfast" && item.MealType != "lunch") || item.ItemName == "" {
+			w.WriteHeader(http.StatusBadRequest)
+			json.NewEncoder(w).Encode(models.ErrorResponse{Error: "each menu item needs meal_type breakfast/lunch and item_name"})
+			return
+		}
+	}
+	if err := h.db.ImportMenuItems(*body.Items); err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		json.NewEncoder(w).Encode(models.ErrorResponse{Error: err.Error()})
+		return
+	}
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(map[string]int{"imported": len(*body.Items)})
+}
+
+func (h *APIHandler) ImportCalendarData(w http.ResponseWriter, r *http.Request) {
+	var body struct {
+		CalendarData *[]models.CalendarData `json:"calendar_data"`
+	}
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		w.WriteHeader(http.StatusBadRequest)
+		json.NewEncoder(w).Encode(models.ErrorResponse{Error: "invalid calendar data JSON"})
+		return
+	}
+	if body.CalendarData == nil {
+		w.WriteHeader(http.StatusBadRequest)
+		json.NewEncoder(w).Encode(models.ErrorResponse{Error: "calendar_data must be an array"})
+		return
+	}
+	for _, data := range *body.CalendarData {
+		if data.Year < 1 || data.Month < 0 || data.Month > 11 || data.DataJSON == "" {
+			w.WriteHeader(http.StatusBadRequest)
+			json.NewEncoder(w).Encode(models.ErrorResponse{Error: "each calendar record needs year, month 0-11, and data_json"})
+			return
+		}
+		var raw interface{}
+		if err := json.Unmarshal([]byte(data.DataJSON), &raw); err != nil {
+			w.WriteHeader(http.StatusBadRequest)
+			json.NewEncoder(w).Encode(models.ErrorResponse{Error: "calendar data_json must contain valid JSON"})
+			return
+		}
+		object, ok := raw.(map[string]interface{})
+		if !ok || object["menus"] == nil {
+			w.WriteHeader(http.StatusBadRequest)
+			json.NewEncoder(w).Encode(models.ErrorResponse{Error: "calendar data_json must contain a menus array"})
+			return
+		}
+		if _, ok := object["menus"].([]interface{}); !ok {
+			w.WriteHeader(http.StatusBadRequest)
+			json.NewEncoder(w).Encode(models.ErrorResponse{Error: "calendar data_json menus must be an array"})
+			return
+		}
+	}
+	if err := h.db.ImportCalendarData(*body.CalendarData); err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		json.NewEncoder(w).Encode(models.ErrorResponse{Error: err.Error()})
+		return
+	}
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(map[string]int{"imported": len(*body.CalendarData)})
 }

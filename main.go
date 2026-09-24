@@ -100,6 +100,9 @@ func main() {
 
 		r.Get("/api/export", apiHandler.ExportData)
 		r.Post("/api/import", apiHandler.ImportData)
+		r.Post("/api/import/holidays", apiHandler.ImportHolidays)
+		r.Post("/api/import/menu-items", apiHandler.ImportMenuItems)
+		r.Post("/api/import/calendar", apiHandler.ImportCalendarData)
 
 		r.Handle("/static/*", fileServer)
 		r.Handle("/css/*", fileServer)
@@ -114,11 +117,11 @@ func main() {
 	})
 
 	srv := &http.Server{
-		Addr:          fmt.Sprintf(":%d", cfg.Port),
-		Handler:       r,
-		ReadTimeout:   10 * time.Second,
-		WriteTimeout:  30 * time.Second,
-		IdleTimeout:   60 * time.Second,
+		Addr:         fmt.Sprintf(":%d", cfg.Port),
+		Handler:      r,
+		ReadTimeout:  10 * time.Second,
+		WriteTimeout: 30 * time.Second,
+		IdleTimeout:  60 * time.Second,
 	}
 
 	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)

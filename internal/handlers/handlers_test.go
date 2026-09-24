@@ -35,6 +35,9 @@ func newTestServer(t *testing.T) (*APIHandler, chi.Router) {
 	r.Post("/api/calendar/{year}/{month}", h.SaveCalendarData)
 	r.Get("/api/export", h.ExportData)
 	r.Post("/api/import", h.ImportData)
+	r.Post("/api/import/holidays", h.ImportHolidays)
+	r.Post("/api/import/menu-items", h.ImportMenuItems)
+	r.Post("/api/import/calendar", h.ImportCalendarData)
 	return h, r
 }
 
@@ -60,7 +63,9 @@ func TestHolidaysCRUD(t *testing.T) {
 	if w.Code != http.StatusCreated {
 		t.Fatalf("AddHoliday status = %d, body = %s", w.Code, w.Body.String())
 	}
-	var created struct{ ID int `json:"id"` }
+	var created struct {
+		ID int `json:"id"`
+	}
 	json.Unmarshal(w.Body.Bytes(), &created)
 	if created.ID == 0 {
 		t.Fatalf("expected non-zero id, got body %s", w.Body.String())
@@ -141,6 +146,45 @@ func TestExportImport(t *testing.T) {
 	w = doJSON(t, router, "POST", "/api/import", json.RawMessage(w.Body.Bytes()))
 	if w.Code != http.StatusOK {
 		t.Fatalf("ImportData status = %d: %s", w.Code, w.Body.String())
+	}
+}
+
+func TestSeparateImportsReplaceOnlySelectedData(t *testing.T) {
+	_, router := newTestServer(t)
+
+	w := doJSON(t, router, "POST", "/api/import/holidays", map[string]interface{}{
+		"holidays": []map[string]interface{}{{"month": 9, "date": 1, "name": "Fall Break"}},
+	})
+	if w.Code != http.StatusOK {
+		t.Fatalf("holiday import status = %d: %s", w.Code, w.Body.String())
+	}
+	w = doJSON(t, router, "POST", "/api/import/menu-items", map[string]interface{}{
+		"items": []map[string]interface{}{{"meal_type": "lunch", "item_name": "Pizza"}},
+	})
+	if w.Code != http.StatusOK {
+		t.Fatalf("menu import status = %d: %s", w.Code, w.Body.String())
+	}
+	w = doJSON(t, router, "GET", "/api/holidays", nil)
+	var holidays []map[string]interface{}
+	json.Unmarshal(w.Body.Bytes(), &holidays)
+	if len(holidays) != 1 || holidays[0]["name"] != "Fall Break" {
+		t.Fatalf("unexpected imported holidays: %s", w.Body.String())
+	}
+	w = doJSON(t, router, "GET", "/api/menu-items", nil)
+	var menus map[string][]map[string]interface{}
+	json.Unmarshal(w.Body.Bytes(), &menus)
+	if len(menus["lunch"]) != 1 || menus["lunch"][0]["item_name"] != "Pizza" {
+		t.Fatalf("unexpected imported menu items: %s", w.Body.String())
+	}
+}
+
+func TestSeparateImportValidation(t *testing.T) {
+	_, router := newTestServer(t)
+	w := doJSON(t, router, "POST", "/api/import/menu-items", map[string]interface{}{
+		"items": []map[string]interface{}{{"meal_type": "dinner", "item_name": "Steak"}},
+	})
+	if w.Code != http.StatusBadRequest {
+		t.Fatalf("expected 400 for invalid imported menu item, got %d", w.Code)
 	}
 }
 

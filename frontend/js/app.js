@@ -19,7 +19,9 @@ const calendarOutput = document.getElementById('calendar-output');
 const downloadSection = document.getElementById('download-section');
 const downloadBtn = document.getElementById('download-btn');
 const exportBtn = document.getElementById('export-btn');
-const importFile = document.getElementById('import-file');
+const importHolidaysFile = document.getElementById('import-holidays-file');
+const importMenuItemsFile = document.getElementById('import-menu-items-file');
+const importCalendarFile = document.getElementById('import-calendar-file');
 const manageHolidaysBtn = document.getElementById('manage-holidays-btn');
 const manageMenusBtn = document.getElementById('manage-menus-btn');
 const logoutBtn = document.getElementById('logout-btn');
@@ -367,34 +369,21 @@ function isHoliday(date, month) {
 function getWeekdaysInMonth(year, month) {
   const firstDay = new Date(year, month, 1);
   const lastDay = new Date(year, month + 1, 0);
-  let day = new Date(firstDay);
-  const dayOffset = (day.getDay() + 6) % 7;
-  day.setDate(day.getDate() - dayOffset);
+  const weekStart = new Date(firstDay);
+  weekStart.setDate(weekStart.getDate() - ((weekStart.getDay() + 6) % 7));
   const weeks = [];
-  let currentWeek = [];
-  while (true) {
-    if (day.getDay() >= 1 && day.getDay() <= 5) {
-      if (day.getMonth() === month) {
-        currentWeek.push({ date: day.getDate(), dayOfWeek: day.getDay() });
-      } else if (currentWeek.length > 0) {
-        currentWeek.push(null);
-      }
+  while (weekStart <= lastDay || weeks.length === 0) {
+    const week = [];
+    for (let weekday = 0; weekday < 5; weekday++) {
+      const day = new Date(weekStart);
+      day.setDate(day.getDate() + weekday);
+      week.push(day.getMonth() === month ? {
+        date: day.getDate(),
+        dayOfWeek: day.getDay()
+      } : null);
     }
-    if (day.getDay() === 5) {
-      if (currentWeek.length > 0) {
-        while (currentWeek.length < 5) currentWeek.push(null);
-        weeks.push(currentWeek);
-        currentWeek = [];
-      }
-    }
-    day.setDate(day.getDate() + 1);
-    if (day > lastDay) {
-      if (currentWeek.length > 0) {
-        while (currentWeek.length < 5) currentWeek.push(null);
-        weeks.push(currentWeek);
-      }
-      break;
-    }
+    if (week.some(day => day !== null)) weeks.push(week);
+    weekStart.setDate(weekStart.getDate() + 7);
   }
   return weeks;
 }
@@ -821,25 +810,119 @@ exportBtn.addEventListener('click', async function() {
   URL.revokeObjectURL(url);
 });
 
-importFile.addEventListener('change', async function(e) {
-  const file = e.target.files[0];
-  if (!file) return;
-  const text = await file.text();
-  const res = await fetch('/api/import', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: text
+function parseCSV(text) {
+  const rows = [];
+  let row = [], value = '', quoted = false;
+  for (let i = 0; i < text.length; i++) {
+    const char = text[i];
+    if (char === '"' && quoted && text[i + 1] === '"') { value += '"'; i++; }
+    else if (char === '"') quoted = !quoted;
+    else if (char === ',' && !quoted) { row.push(value.trim()); value = ''; }
+    else if ((char === '\n' || char === '\r') && !quoted) {
+      if (char === '\r' && text[i + 1] === '\n') i++;
+      row.push(value.trim());
+      if (row.some(cell => cell !== '')) rows.push(row);
+      row = []; value = '';
+    } else value += char;
+  }
+  if (value || row.length) {
+    row.push(value.trim());
+    if (row.some(cell => cell !== '')) rows.push(row);
+  }
+  if (rows.length < 2) return [];
+  const headers = rows.shift().map(h => h.replace(/^\uFEFF/, '').toLowerCase().trim());
+  return rows.map(values => Object.fromEntries(headers.map((header, i) => [header, values[i] || ''])));
+}
+
+function csvValue(row, ...names) {
+  for (const name of names) if (row[name] !== undefined) return row[name];
+  return '';
+}
+
+function parseMonth(value, csv) {
+  const text = String(value).trim();
+  const named = MONTHS.findIndex(month => month.toLowerCase() === text.toLowerCase());
+  if (named >= 0) return named;
+  const number = Number(text);
+  if (!Number.isInteger(number)) throw new Error('month must be a month name or number');
+  const month = csv ? (number === 0 ? 0 : number - 1) : number;
+  if (month < 0 || month > 11) throw new Error('month must be January-December or 0-11 in JSON');
+  return month;
+}
+
+function parseImportData(text, fileName, kind) {
+  const isCSV = fileName.toLowerCase().endsWith('.csv');
+  const source = isCSV ? parseCSV(text) : JSON.parse(text);
+  if (kind === 'holidays') {
+    const rows = isCSV ? source : (Array.isArray(source) ? source : source.holidays);
+    if (!Array.isArray(rows)) throw new Error('JSON must contain holidays array');
+    return rows.map(row => ({
+      month: parseMonth(row.month, isCSV),
+      date: Number(csvValue(row, 'date')),
+      name: String(csvValue(row, 'name', 'holiday')).trim()
+    }));
+  }
+  if (kind === 'menu-items') {
+    let rows;
+    if (isCSV) rows = source;
+    else if (Array.isArray(source)) rows = source;
+    else if (Array.isArray(source.items)) rows = source.items;
+    else {
+      const groups = source.menu_items || source;
+      rows = ['breakfast', 'lunch'].flatMap(type => (groups[type] || []).map(item => typeof item === 'string' ? { meal_type: type, item_name: item } : { ...item, meal_type: type }));
+    }
+    return rows.map(row => ({
+      meal_type: String(csvValue(row, 'meal_type', 'type')).toLowerCase().trim(),
+      item_name: String(csvValue(row, 'item_name', 'name')).trim()
+    }));
+  }
+  const rows = isCSV ? source : (Array.isArray(source) ? source : source.calendar_data);
+  if (!Array.isArray(rows)) throw new Error('JSON must contain calendar_data array');
+  return rows.map(row => {
+    const dataJSON = csvValue(row, 'data_json');
+    let data = dataJSON;
+    if (!data) {
+      const menus = typeof row.menus === 'string' ? JSON.parse(row.menus) : (row.menus || []);
+      data = JSON.stringify({ menus: menus });
+    }
+    else JSON.parse(data);
+    return {
+      year: Number(csvValue(row, 'year')),
+      month: parseMonth(row.month, isCSV),
+      school_name: String(csvValue(row, 'school_name', 'school')).trim(),
+      data_json: data
+    };
   });
-  if (res.ok) {
-    showToast('Data imported successfully');
-    await Promise.all([loadHolidays(), loadMenuItems()]);
+}
+
+async function importFile(file, kind, input) {
+  if (!file) return;
+  try {
+    const records = parseImportData(await file.text(), file.name, kind);
+    const endpoint = kind === 'holidays' ? '/api/import/holidays' : kind === 'menu-items' ? '/api/import/menu-items' : '/api/import/calendar';
+    const key = kind === 'holidays' ? 'holidays' : kind === 'menu-items' ? 'items' : 'calendar_data';
+    const res = await fetch(endpoint, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ [key]: records })
+    });
+    if (!res.ok) {
+      const error = await res.json().catch(() => ({}));
+      throw new Error(error.error || 'server rejected import');
+    }
+    showToast(kind + ' imported successfully');
+    if (kind === 'holidays' || kind === 'menu-items') await Promise.all([loadHolidays(), loadMenuItems()]);
     await renderInputGrid();
     renderCalendar(true);
-  } else {
-    showToast('Error importing data', 'error');
+  } catch (error) {
+    showToast('Import failed: ' + error.message, 'error');
   }
-  importFile.value = '';
-});
+  input.value = '';
+}
+
+importHolidaysFile.addEventListener('change', e => importFile(e.target.files[0], 'holidays', importHolidaysFile));
+importMenuItemsFile.addEventListener('change', e => importFile(e.target.files[0], 'menu-items', importMenuItemsFile));
+importCalendarFile.addEventListener('change', e => importFile(e.target.files[0], 'calendar', importCalendarFile));
 
 function shiftMonth(delta) {
   let m = parseInt(monthSelect.value) + delta;

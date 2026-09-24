@@ -313,3 +313,72 @@ func (d *DB) ImportAll(data *models.ExportData) error {
 
 	return tx.Commit()
 }
+
+func (d *DB) ImportHolidays(holidays []models.Holiday) error {
+	tx, err := d.Begin()
+	if err != nil {
+		return err
+	}
+	defer tx.Rollback()
+
+	if _, err := tx.Exec("DELETE FROM holidays"); err != nil {
+		return err
+	}
+	stmt, err := tx.Prepare("INSERT INTO holidays (month, date, name) VALUES (?, ?, ?)")
+	if err != nil {
+		return err
+	}
+	defer stmt.Close()
+	for _, holiday := range holidays {
+		if _, err := stmt.Exec(holiday.Month, holiday.Date, holiday.Name); err != nil {
+			return err
+		}
+	}
+	return tx.Commit()
+}
+
+func (d *DB) ImportMenuItems(items []models.MenuItem) error {
+	tx, err := d.Begin()
+	if err != nil {
+		return err
+	}
+	defer tx.Rollback()
+
+	if _, err := tx.Exec("DELETE FROM menu_items"); err != nil {
+		return err
+	}
+	stmt, err := tx.Prepare("INSERT INTO menu_items (meal_type, item_name) VALUES (?, ?)")
+	if err != nil {
+		return err
+	}
+	defer stmt.Close()
+	for _, item := range items {
+		if _, err := stmt.Exec(item.MealType, item.ItemName); err != nil {
+			return err
+		}
+	}
+	return tx.Commit()
+}
+
+func (d *DB) ImportCalendarData(calendarData []models.CalendarData) error {
+	tx, err := d.Begin()
+	if err != nil {
+		return err
+	}
+	defer tx.Rollback()
+
+	if _, err := tx.Exec("DELETE FROM calendar_data"); err != nil {
+		return err
+	}
+	stmt, err := tx.Prepare("INSERT INTO calendar_data (year, month, school_name, data_json) VALUES (?, ?, ?, ?)")
+	if err != nil {
+		return err
+	}
+	defer stmt.Close()
+	for _, data := range calendarData {
+		if _, err := stmt.Exec(data.Year, data.Month, data.SchoolName, data.DataJSON); err != nil {
+			return err
+		}
+	}
+	return tx.Commit()
+}
