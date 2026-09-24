@@ -263,13 +263,14 @@ func (h *APIHandler) ImportHolidays(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 	}
-	if err := h.db.ImportHolidays(*body.Holidays); err != nil {
+	imported, err := h.db.ImportHolidays(*body.Holidays)
+	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 		json.NewEncoder(w).Encode(models.ErrorResponse{Error: err.Error()})
 		return
 	}
 	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(map[string]int{"imported": len(*body.Holidays)})
+	json.NewEncoder(w).Encode(map[string]int{"imported": imported})
 }
 
 func (h *APIHandler) ImportMenuItems(w http.ResponseWriter, r *http.Request) {
@@ -293,13 +294,14 @@ func (h *APIHandler) ImportMenuItems(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 	}
-	if err := h.db.ImportMenuItems(*body.Items); err != nil {
+	imported, err := h.db.ImportMenuItems(*body.Items)
+	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 		json.NewEncoder(w).Encode(models.ErrorResponse{Error: err.Error()})
 		return
 	}
 	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(map[string]int{"imported": len(*body.Items)})
+	json.NewEncoder(w).Encode(map[string]int{"imported": imported})
 }
 
 func (h *APIHandler) ImportCalendarData(w http.ResponseWriter, r *http.Request) {
@@ -340,11 +342,12 @@ func (h *APIHandler) ImportCalendarData(w http.ResponseWriter, r *http.Request) 
 			return
 		}
 	}
-	if err := h.db.ImportCalendarData(*body.CalendarData); err != nil {
+	imported, err := h.db.ImportCalendarData(*body.CalendarData)
+	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 		json.NewEncoder(w).Encode(models.ErrorResponse{Error: err.Error()})
 		return
 	}
 	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(map[string]int{"imported": len(*body.CalendarData)})
+	json.NewEncoder(w).Encode(map[string]int{"imported": imported})
 }

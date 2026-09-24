@@ -167,8 +167,25 @@ func TestSeparateImportsReplaceOnlySelectedData(t *testing.T) {
 	w = doJSON(t, router, "GET", "/api/holidays", nil)
 	var holidays []map[string]interface{}
 	json.Unmarshal(w.Body.Bytes(), &holidays)
-	if len(holidays) != 1 || holidays[0]["name"] != "Fall Break" {
+	if len(holidays) < 1 {
 		t.Fatalf("unexpected imported holidays: %s", w.Body.String())
+	}
+	foundHoliday := false
+	for _, holiday := range holidays {
+		if holiday["name"] == "Fall Break" {
+			foundHoliday = true
+		}
+	}
+	if !foundHoliday {
+		t.Fatalf("imported holiday missing: %s", w.Body.String())
+	}
+	w = doJSON(t, router, "POST", "/api/import/holidays", map[string]interface{}{
+		"holidays": []map[string]interface{}{{"month": 9, "date": 1, "name": "Fall Break"}},
+	})
+	var holidayResult map[string]int
+	json.Unmarshal(w.Body.Bytes(), &holidayResult)
+	if holidayResult["imported"] != 0 {
+		t.Fatalf("duplicate holiday imported: %s", w.Body.String())
 	}
 	w = doJSON(t, router, "GET", "/api/menu-items", nil)
 	var menus map[string][]map[string]interface{}

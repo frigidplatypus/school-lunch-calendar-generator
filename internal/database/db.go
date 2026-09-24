@@ -314,71 +314,93 @@ func (d *DB) ImportAll(data *models.ExportData) error {
 	return tx.Commit()
 }
 
-func (d *DB) ImportHolidays(holidays []models.Holiday) error {
+func (d *DB) ImportHolidays(holidays []models.Holiday) (int, error) {
 	tx, err := d.Begin()
 	if err != nil {
-		return err
+		return 0, err
 	}
 	defer tx.Rollback()
 
-	if _, err := tx.Exec("DELETE FROM holidays"); err != nil {
-		return err
-	}
-	stmt, err := tx.Prepare("INSERT INTO holidays (month, date, name) VALUES (?, ?, ?)")
+	stmt, err := tx.Prepare(`INSERT INTO holidays (month, date, name)
+		SELECT ?, ?, ? WHERE NOT EXISTS (
+			SELECT 1 FROM holidays WHERE month = ? AND date = ? AND name = ?
+		)`)
 	if err != nil {
-		return err
+		return 0, err
 	}
 	defer stmt.Close()
+	imported := 0
 	for _, holiday := range holidays {
-		if _, err := stmt.Exec(holiday.Month, holiday.Date, holiday.Name); err != nil {
-			return err
+		result, err := stmt.Exec(holiday.Month, holiday.Date, holiday.Name, holiday.Month, holiday.Date, holiday.Name)
+		if err != nil {
+			return 0, err
+		}
+		if count, _ := result.RowsAffected(); count > 0 {
+			imported++
 		}
 	}
-	return tx.Commit()
+	if err := tx.Commit(); err != nil {
+		return 0, err
+	}
+	return imported, nil
 }
 
-func (d *DB) ImportMenuItems(items []models.MenuItem) error {
+func (d *DB) ImportMenuItems(items []models.MenuItem) (int, error) {
 	tx, err := d.Begin()
 	if err != nil {
-		return err
+		return 0, err
 	}
 	defer tx.Rollback()
 
-	if _, err := tx.Exec("DELETE FROM menu_items"); err != nil {
-		return err
-	}
-	stmt, err := tx.Prepare("INSERT INTO menu_items (meal_type, item_name) VALUES (?, ?)")
+	stmt, err := tx.Prepare(`INSERT INTO menu_items (meal_type, item_name)
+		SELECT ?, ? WHERE NOT EXISTS (
+			SELECT 1 FROM menu_items WHERE meal_type = ? AND lower(item_name) = lower(?)
+		)`)
 	if err != nil {
-		return err
+		return 0, err
 	}
 	defer stmt.Close()
+	imported := 0
 	for _, item := range items {
-		if _, err := stmt.Exec(item.MealType, item.ItemName); err != nil {
-			return err
+		result, err := stmt.Exec(item.MealType, item.ItemName, item.MealType, item.ItemName)
+		if err != nil {
+			return 0, err
+		}
+		if count, _ := result.RowsAffected(); count > 0 {
+			imported++
 		}
 	}
-	return tx.Commit()
+	if err := tx.Commit(); err != nil {
+		return 0, err
+	}
+	return imported, nil
 }
 
-func (d *DB) ImportCalendarData(calendarData []models.CalendarData) error {
+func (d *DB) ImportCalendarData(calendarData []models.CalendarData) (int, error) {
 	tx, err := d.Begin()
 	if err != nil {
-		return err
+		return 0, err
 	}
 	defer tx.Rollback()
 
-	if _, err := tx.Exec("DELETE FROM calendar_data"); err != nil {
-		return err
-	}
-	stmt, err := tx.Prepare("INSERT INTO calendar_data (year, month, school_name, data_json) VALUES (?, ?, ?, ?)")
+	stmt, err := tx.Prepare(`INSERT INTO calendar_data (year, month, school_name, data_json)
+		VALUES (?, ?, ?, ?) ON CONFLICT(year, month) DO NOTHING`)
 	if err != nil {
-		return err
+		return 0, err
 	}
 	defer stmt.Close()
+	imported := 0
 	for _, data := range calendarData {
-		if _, err := stmt.Exec(data.Year, data.Month, data.SchoolName, data.DataJSON); err != nil {
-			return err
+		result, err := stmt.Exec(data.Year, data.Month, data.SchoolName, data.DataJSON)
+		if err != nil {
+			return 0, err
+		}
+		if count, _ := result.RowsAffected(); count > 0 {
+			imported++
 		}
 	}
-	return tx.Commit()
+	if err := tx.Commit(); err != nil {
+		return 0, err
+	}
+	return imported, nil
 }

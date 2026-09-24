@@ -910,7 +910,8 @@ async function importFile(file, kind, input) {
       const error = await res.json().catch(() => ({}));
       throw new Error(error.error || 'server rejected import');
     }
-    showToast(kind + ' imported successfully');
+    const result = await res.json();
+    showToast(kind + ' import complete: ' + result.imported + ' new record(s); duplicates skipped');
     if (kind === 'holidays' || kind === 'menu-items') await Promise.all([loadHolidays(), loadMenuItems()]);
     await renderInputGrid();
     renderCalendar(true);
