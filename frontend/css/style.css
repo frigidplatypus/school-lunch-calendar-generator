@@ -94,26 +94,6 @@ h1 {
   max-width: 140px;
 }
 
-.preset-colors {
-  display: flex;
-  gap: 4px;
-  align-items: center;
-}
-
-.preset-color {
-  width: 22px;
-  height: 22px;
-  border-radius: 50%;
-  border: 2px solid #ccc;
-  cursor: pointer;
-  transition: transform 0.15s;
-}
-
-.preset-color:hover {
-  transform: scale(1.2);
-  border-color: #666;
-}
-
 .btn {
   padding: 8px 20px;
   border: none;
@@ -572,5 +552,4 @@ h1 {
   display: inline-block;
   vertical-align: middle;
 }
-
 

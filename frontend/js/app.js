@@ -134,14 +134,6 @@ function getMenuItemNames(type) {
   return menuItems[type].map(item => item.item_name);
 }
 
-document.querySelectorAll('.preset-color').forEach(el => {
-  el.addEventListener('click', () => {
-    colorPicker.value = el.dataset.color;
-    applyThemeToHeading(el.dataset.color);
-    scheduleStylePreview();
-  });
-});
-
 colorPicker.addEventListener('input', () => applyThemeToHeading(colorPicker.value));
 
 logoInput.addEventListener('change', async function(e) {
